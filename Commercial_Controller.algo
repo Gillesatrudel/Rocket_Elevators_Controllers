@@ -1,0 +1,170 @@
+    
+    
+    SEQUENCE Batterie (Floor)
+        FOR EACH column IN columns
+               IF Floor =< 1 THEN
+                 CALL CallElevator (Direction, Floor, column)
+               IF Floor =< 20 AND >= 1 THEN
+                 CALL CallElevator (Direction, Floor, column)
+               IF Floor =< 40 AND >= 1 THEN
+                 CALL CallElevator (Direction, Floor, column)
+               IF Floor =< 60 and >= 1 THEN
+                 CALL CallElevator (Direction, Floor, column) 
+               END IF
+        END FOR
+    END SEQUENCE
+
+            
+
+	SEQUENCE CallElevator(Direction, floor, Column)
+	
+		CALL ActivateButton (Direction, floor)
+		CALL FindElevator (Direction, floor) RETURNING Elevator
+		CALL RequestElevator (Elevator, floor)
+		CALL OperateElevator (Elevator)
+
+	END SEQUENCE
+	
+	
+	SEQUENCE ActivateButton (Direction, floor)
+	
+		CALL FindButton (Direction, floor) RETURNING Button
+		SET  Button Active
+	ENDSEQUENCE
+
+    SEQUENCE FindButton(Direction, floor)RETURNING Button
+	
+		FOR EACH Button IN Buttons
+			IF Floor = ButtonFloor AND Direction = ButtonDirection
+			THEN RETURN BUTTON
+		END FOR
+	END SEQUENCE
+
+
+	SEQUENCE DesactivateButton (ElevatorDirection, floor)
+	
+		CALL FindActivateButton (ElevatorDirection, floor) RETURNING Button
+		SET  ActivateButton Inactive
+	ENDSEQUENCE
+
+    SEQUENCE FindActivateButton (ElevatorDirection, Floor)
+        FOR EACH ActivateButton IN ActivateButtons
+            IF CurrentFloor = ActivateButtonFloor AND Direction = ActivateButtonDirection THEN 
+            RETURN ActivateButton
+        END FOR
+    END SEQUENCE
+
+    SEQUENCE ActivateInsideButton (Direction, CurrentFloor)
+        CALL FindActivateInsideButton (Direction, Floor) RETURNING ActivateInsideButton
+        SET ActivateInsideButton Active
+    END SEQUENCE
+
+	
+    SEQUENCE DesactivateInsideButton (Elevator, CurrentFloor)
+        CALL FindActiveInsideButton (Elevator, CurrentFloor) RETURNING Button
+        SET ActivateInsideButton Inactive
+    END SEQUENCE
+	   
+    SEQUENCE FindActivateInsideButton (Elevator, CurrentFloor)
+        FOR EACH ActivateInsideButton IN ActivateInsideButtons
+            IF CurrentFloor = ActivateInsideButtonFloor THEN 
+            RETURN ActivateInsideButton
+        END FOR
+    END SEQUENCE
+
+    	
+    SEQUENCE FindElevator (Direction, Floor) 
+        WHILE Elevator NOT Found
+            FOR EACH Elevator IN Elevators 
+                IF Floor = CurrentFloor  AND Status Is Stopped AND ElevatorDirection IS Direction THEN
+                    RETURN Elevator
+                    ELSE IF Status IS Idle AND Floor = CurrentFloor THEN
+                    RETURN Elevator                
+                ELSE IF Floor > CurrentFloor AND ElevatorDirection IS GoingUp AND ElevatorDirection IS Direction THEN
+                    RETURN Elevator
+                ELSE IF ElevatorDirection IS GoingUp AND ElevatorDirection IS Direction AND Floor > CurrentFloor THEN
+                    RETURN Elevator
+                ELSE IF ElevatorDirection IS GoingDown AND ElevatorDirection IS Direction AND Floor < CurrentFloor THEN
+                    RETURN Elevator
+                END IF
+            END FOR
+
+            READ Elevator WITH Shortest FloorList FROM Elevators
+                    RETURN Elevator                
+                
+        END WHILE
+    END SEQUENCE
+
+        
+
+    SEQUENCE OperateElevator (Elevator)
+        READ RequestedFloor FROM FloorList
+        CALL ActivateInsideButton (RequestedFloor, CurrentFloor)
+        IF CurrentFloor IS RequestedFloor THEN 
+            CALL OpenDoor (Elevator)
+        IF CurrentFloor > RequestedFloor THEN
+            CALL MoveDown (Elevator, RequestedFloor)
+        IF CurrentFloor < RequestedFloor THEN
+            CALL MoveUp (Elevator, RequestedFloor)
+        END IF
+
+    END SEQUENCE
+
+    SEQUENCE RequestElevator (Elevator, RequestedFloor)
+        ADD RequestedFloor TO FloorList
+        CALL SortFloorList (FloorList) RETURNING SortedFloorList
+        SET FloorList TO SortedFloorList
+    END SEQUENCE
+
+    SEQUENCE SortFloorList (FloorList, Direction)
+        SORT FloorList BY Direction THEN RETURN FloorList
+    END SEQUENCE
+
+    SEQUENCE OpenDoor (Elevator)
+        CALL FindActivateButton (ElevatorDirection, Floor) RETURNING ActivateButton 
+        CALL DesactivateInsideButton(Elevator, CurrentFloor) 
+        RETURN ActivateButton
+        REPEAT 
+            OpenDoor 
+            INIT Timer TO 5 Seconds 
+        UNTIL Door NOT Obstructed         
+        CALL CloseDoor (Elevator)
+    END SEQUENCE
+
+    SEQUENCE Obstructed (Elevator)
+        READ Captor FROM door
+        IF Obstructed
+            RETURN TRUE
+        ELSE RETURN FALSE
+    END SEQUENCE
+
+
+    SEQUENCE Overweight (Elevator)
+        READ Weight FROM Balance
+        IF Weight > MaxWeight THEN
+            RETURN TRUE
+        ELSE RETURN FALSE
+        END IF
+    END SEQUENCE
+
+    SEQUENCE CloseDoor (Elevator)
+        WHILE Obstructed OR Overweight
+         CALL OpenDoor (Elevator)
+        END WHILE
+        CALL CloseDoor
+        CALL OperateElevator (Elevator)
+    END SEQUENCE
+
+    SEQUENCE MoveDown (Elevator, RequestedFloor)
+        REPEAT 
+            COMPUTE CurrentFloor = Floor - 1 
+        UNTIL CurrentFloor IS Floor
+        CALL RequestElevator (Elevator, RequestedFloor)
+    END SEQUENCE
+
+    SEQUENCE MoveUp (Elevator, RequestedFloor)
+        REPEAT 
+            COMPUTE CurrentFloor = Floor + 1 
+        UNTIL CurrentFloor IS Floor
+        CALL RequestElevator (Elevator, RequestedFloor)
+    END SEQUENCE
