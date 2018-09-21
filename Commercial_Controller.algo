@@ -18,21 +18,21 @@
 
 	SEQUENCE CallElevator(Direction, floor, Column)
 	
-		CALL ActivateButton (Direction, floor)
-		CALL FindElevator (Direction, floor) RETURNING Elevator
-		CALL RequestElevator (Elevator, floor)
-		CALL OperateElevator (Elevator)
+		CALL ActivateButton (Direction, floor, Column)
+		CALL FindElevator (Direction, floor, Column) RETURNING Elevator
+		CALL RequestElevator (Elevator, floor, Column)
+		CALL OperateElevator (Elevator, Column)
 
 	END SEQUENCE
 	
 	
-	SEQUENCE ActivateButton (Direction, floor)
+	SEQUENCE ActivateButton (Direction, floor, Column)
 	
-		CALL FindButton (Direction, floor) RETURNING Button
+		CALL FindButton (Direction, floor, Column) RETURNING Button
 		SET  Button Active
 	ENDSEQUENCE
 
-    SEQUENCE FindButton(Direction, floor)RETURNING Button
+    SEQUENCE FindButton(Direction, floor,Column)RETURNING Button
 	
 		FOR EACH Button IN Buttons
 			IF Floor = ButtonFloor AND Direction = ButtonDirection
@@ -41,31 +41,31 @@
 	END SEQUENCE
 
 
-	SEQUENCE DesactivateButton (ElevatorDirection, floor)
+	SEQUENCE DesactivateButton (ElevatorDirection, floor, Column)
 	
-		CALL FindActivateButton (ElevatorDirection, floor) RETURNING Button
+		CALL FindActivateButton (ElevatorDirection, floor, Column) RETURNING Button
 		SET  ActivateButton Inactive
 	ENDSEQUENCE
 
-    SEQUENCE FindActivateButton (ElevatorDirection, Floor)
+    SEQUENCE FindActivateButton (ElevatorDirection, Floor, Column)
         FOR EACH ActivateButton IN ActivateButtons
             IF CurrentFloor = ActivateButtonFloor AND Direction = ActivateButtonDirection THEN 
             RETURN ActivateButton
         END FOR
     END SEQUENCE
 
-    SEQUENCE ActivateInsideButton (Direction, CurrentFloor)
-        CALL FindActivateInsideButton (Direction, Floor) RETURNING ActivateInsideButton
+    SEQUENCE ActivateInsideButton (Elevator, CurrentFloor, Column)
+        CALL FindActivateInsideButton (Direction, Floor, Column) RETURNING ActivateInsideButton
         SET ActivateInsideButton Active
     END SEQUENCE
 
 	
-    SEQUENCE DesactivateInsideButton (Elevator, CurrentFloor)
-        CALL FindActiveInsideButton (Elevator, CurrentFloor) RETURNING Button
+    SEQUENCE DesactivateInsideButton (Elevator, CurrentFloor, Column)
+        CALL FindActiveInsideButton (Elevator, CurrentFloor, Column) RETURNING Button
         SET ActivateInsideButton Inactive
     END SEQUENCE
 	   
-    SEQUENCE FindActivateInsideButton (Elevator, CurrentFloor)
+    SEQUENCE FindActivateInsideButton (Elevator, CurrentFloor, Column)
         FOR EACH ActivateInsideButton IN ActivateInsideButtons
             IF CurrentFloor = ActivateInsideButtonFloor THEN 
             RETURN ActivateInsideButton
@@ -73,10 +73,10 @@
     END SEQUENCE
 
     	
-    SEQUENCE FindElevator (Direction, Floor) 
+    SEQUENCE FindElevator (Direction, Floor, Column) 
         WHILE Elevator NOT Found
             FOR EACH Elevator IN Elevators 
-                IF Floor = CurrentFloor  AND Status Is Stopped AND ElevatorDirection IS Direction THEN
+                IF Floor = CurrentFloor  AND Status IS Stopped AND ElevatorDirection IS Direction THEN
                     RETURN Elevator
                     ELSE IF Status IS Idle AND Floor = CurrentFloor THEN
                     RETURN Elevator                
@@ -97,41 +97,41 @@
 
         
 
-    SEQUENCE OperateElevator (Elevator)
+    SEQUENCE OperateElevator (Elevator, Column)
         READ RequestedFloor FROM FloorList
-        CALL ActivateInsideButton (RequestedFloor, CurrentFloor)
+        CALL ActivateInsideButton (Elevator, CurrentFloor, Column)
         IF CurrentFloor IS RequestedFloor THEN 
-            CALL OpenDoor (Elevator)
+            CALL OpenDoor (Elevator, Column)
         IF CurrentFloor > RequestedFloor THEN
-            CALL MoveDown (Elevator, RequestedFloor)
+            CALL MoveDown (Elevator, RequestedFloor, Column)
         IF CurrentFloor < RequestedFloor THEN
-            CALL MoveUp (Elevator, RequestedFloor)
+            CALL MoveUp (Elevator, RequestedFloor, Column)
         END IF
 
     END SEQUENCE
 
-    SEQUENCE RequestElevator (Elevator, RequestedFloor)
+    SEQUENCE RequestElevator (Elevator, RequestedFloor, Column)
         ADD RequestedFloor TO FloorList
-        CALL SortFloorList (FloorList) RETURNING SortedFloorList
+        CALL SortFloorList (FloorList, Column) RETURNING SortedFloorList
         SET FloorList TO SortedFloorList
     END SEQUENCE
 
-    SEQUENCE SortFloorList (FloorList, Direction)
+    SEQUENCE SortFloorList (FloorList, Direction, Column)
         SORT FloorList BY Direction THEN RETURN FloorList
     END SEQUENCE
 
-    SEQUENCE OpenDoor (Elevator)
-        CALL FindActivateButton (ElevatorDirection, Floor) RETURNING ActivateButton 
-        CALL DesactivateInsideButton(Elevator, CurrentFloor) 
+    SEQUENCE OpenDoor (Elevator, Column)
+        CALL FindActivateButton (ElevatorDirection, Floor, Column) RETURNING ActivateButton 
+        CALL DesactivateInsideButton(Elevator, CurrentFloor, Column) 
         RETURN ActivateButton
         REPEAT 
             OpenDoor 
             INIT Timer TO 5 Seconds 
         UNTIL Door NOT Obstructed         
-        CALL CloseDoor (Elevator)
+        CALL CloseDoor (Elevator, Column)
     END SEQUENCE
 
-    SEQUENCE Obstructed (Elevator)
+    SEQUENCE Obstructed (Elevator, Column)
         READ Captor FROM door
         IF Obstructed
             RETURN TRUE
@@ -139,7 +139,7 @@
     END SEQUENCE
 
 
-    SEQUENCE Overweight (Elevator)
+    SEQUENCE Overweight (Elevator, Column)
         READ Weight FROM Balance
         IF Weight > MaxWeight THEN
             RETURN TRUE
@@ -147,24 +147,26 @@
         END IF
     END SEQUENCE
 
-    SEQUENCE CloseDoor (Elevator)
+    SEQUENCE CloseDoor (Elevator, Column)
         WHILE Obstructed OR Overweight
-         CALL OpenDoor (Elevator)
+         CALL OpenDoor (Elevator, Column)
         END WHILE
         CALL CloseDoor
-        CALL OperateElevator (Elevator)
+        CALL OperateElevator (Elevator, Column)
     END SEQUENCE
 
-    SEQUENCE MoveDown (Elevator, RequestedFloor)
+    SEQUENCE MoveDown (Elevator, RequestedFloor, Column)
         REPEAT 
-            COMPUTE CurrentFloor = Floor - 1 
+            COMPUTE CurrentFloor = Floor - 1
+            SHOW CurrentFloor 
         UNTIL CurrentFloor IS Floor
-        CALL RequestElevator (Elevator, RequestedFloor)
+        CALL RequestElevator (Elevator, RequestedFloor, Column)
     END SEQUENCE
 
-    SEQUENCE MoveUp (Elevator, RequestedFloor)
+    SEQUENCE MoveUp (Elevator, RequestedFloor, Column)
         REPEAT 
-            COMPUTE CurrentFloor = Floor + 1 
+            COMPUTE CurrentFloor = Floor + 1
+            SHOW CurrentFloor
         UNTIL CurrentFloor IS Floor
-        CALL RequestElevator (Elevator, RequestedFloor)
+        CALL RequestElevator (Elevator, RequestedFloor, Column)
     END SEQUENCE
