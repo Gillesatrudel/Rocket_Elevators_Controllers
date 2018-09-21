@@ -169,14 +169,14 @@
 
     SEQUENCE MoveDown (Elevator, RequestedFloor)
         REPEAT 
-            COMPUTE CurrentFloor = Floor - 1 
+            COMPUTE CurrentFloor = |Floor - 1| 
         UNTIL CurrentFloor IS Floor
         CALL RequestElevator (Elevator, RequestedFloor)
     END SEQUENCE
 
     SEQUENCE MoveUp (Elevator, RequestedFloor)
         REPEAT 
-            COMPUTE CurrentFloor = Floor + 1 
+            COMPUTE CurrentFloor = |Floor + 1| 
         UNTIL CurrentFloor IS Floor
         CALL RequestElevator (Elevator, RequestedFloor)
     END SEQUENCE
