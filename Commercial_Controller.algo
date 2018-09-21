@@ -1,6 +1,6 @@
     
     
-    SEQUENCE Batterie (Floor)
+    SEQUENCE Battery (Floor)
         FOR EACH column IN columns
                IF Floor =< 1 THEN
                  CALL CallElevator (Direction, Floor, column)
