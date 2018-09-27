@@ -47,7 +47,7 @@
     SEQUENCE FindButton(Direction, floor)RETURNING Button
 	
 		FOR EACH BUTTON IN BUTTONS
-			IF Floor= ButtonFloor AND Direction = ButtonDirection
+			IF Floor = ButtonFloor AND Direction = ButtonDirection
 			THEN RETURN BUTTON
 		END FOR
 	END SEQUENCE
