@@ -68,7 +68,8 @@ class ElevatorController {
     }
 }
 
-class Elevator {
+class Elevator
+ {
     constructor(elevator_number, number_of_floor) {
         this.elevator_number = elevator_number;
         this.direction = "NONE";
@@ -167,10 +168,10 @@ class Elevator {
 const a = new ElevatorController(10,2);
 
 //scenario 1
-a.column.elevatorList[0].current_floor = 1;
-a.column.elevatorList[1].current_floor = 5;
-a.RequestElevator(2, 'Up')
-a.RequestFloor(a.column.elevatorList[0], 6)
+//a.column.elevatorList[0].current_floor = 1;
+//a.column.elevatorList[1].current_floor = 5;
+//a.RequestElevator(2, 'Up')
+//a.RequestFloor(a.column.elevatorList[0], 6)
 
 
 //scenario 2
