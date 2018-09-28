@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Timers;
+
 namespace Rocket_Elevators_Controllers {
     class Program
     {
+		
         static void Main(string[] args)
         {
             var elevatorController = new ElevatorController(10, 2);
-			elevatorController.RequestElevator(1, "Up");
-			elevatorController.RequestFloor(1, "Down");
+			var selectedElevator = elevatorController.RequestElevator(1, "Up");
+
+
+			elevatorController.RequestFloor(selectedElevator, 8);
         }
     }
 
@@ -45,61 +50,67 @@ namespace Rocket_Elevators_Controllers {
 		public int nbElevators;
 		public List < Button > buttonList;
 		public Column column;
-		public int selectedElevator;
+		public Elevator selectedElevator;
 		public ElevatorController(int nbFloor, int nbElevators) {
 			this.nbFloor = nbFloor;
 			this.nbElevators = nbElevators;
 			this.column = new Column(nbFloor, nbElevators);
 		}
-		public void RequestElevator(int FloorNumber, string Direction) {
-			selectedElevator = this.FindElevator(FloorNumber);
-			selectedElevator = this.addFloorToList(FloorNumber);
-			selectedElevator = this.activateInsideButton(FloorNumber);
+		public Elevator RequestElevator(int FloorNumber, string Direction) {
+			selectedElevator = this.FindElevator(FloorNumber, Direction);
+			selectedElevator.addFloorToList(FloorNumber);
+			selectedElevator.activateInsideButton(FloorNumber);
 			Console.WriteLine("Request Elevator on floor " + FloorNumber.ToString() + ", going " + Direction);
+
+			return selectedElevator;
 		}
-		public void RequestFloor(int Elevator, string Direction) {
-			Elevator.activateInsideButton(FloorNumber);
-			Elevator.addFloorToList(FloorNumber);
-			Elevator.moveNext();
-			Console.WriteLine("Request Floor number " + FloorNumber.ToString() + ", going " + Direction);
+		public void RequestFloor(Elevator elevator, int floorNumber) {
+			elevator.activateInsideButton(floorNumber);
+			elevator.addFloorToList(floorNumber);
+			elevator.moveNext();
+			Console.WriteLine("Request Floor number " + floorNumber.ToString());
 		}
-		public void FindElevator(int FloorNumber) {
+		public Elevator FindElevator(int floorNumber, string direction) {
 			int distanceFloor = 999;
-			int? selectedElevator = null;
-			for (int i = 0; i < this.column.elevatorsList.Count; i++) {
-				int differenceFloor = Math.Abs(FloorNumber - this.column.elevatorsList[i].currentFloor);
+			Elevator selectedElevator = null;
+			foreach(Elevator elevator in this.column.elevatorsList) {
+				int differenceFloor = Math.Abs(floorNumber - elevator.current_floor);
 				if (differenceFloor < distanceFloor) {
 					distanceFloor = differenceFloor;
-					selectedElevator = this.column.elevatorsList[i];
+					selectedElevator = elevator;
 				}
-				return selectedElevator;
-				 Console.WriteLine("FindElevator " + FloorNumber);
+				
+				Console.WriteLine("FindElevator " + floorNumber);
+				
 			}
+			return selectedElevator;
 		}
-
+		
 	}
 
 	class Elevator {
+		Timer tmr = new Timer(); 
+
 			public int elevatorNumber;
 			public int nbFloor;
-			public List < Button > buttonList;			
+			public List<InsideButton> buttonList;			
 			public string status;
 			public string direction;
 			public int current_floor;
-			public List < floor > floorList;
+			public List<int> floorList;
 			public Elevator(int elevatorNumber, int nbFloor) {
 				this.elevatorNumber = elevatorNumber;
 				this.direction = "NONE";
 				this.status = "idle";
-				this.floorList = new List < floor > ();
-				this.buttonList = buttonList.Add(new Button());
+				this.floorList = new List<int> ();
+				this.buttonList = new List<InsideButton>();
 				for (int i = 0; i < nbFloor; i++) {
-					buttonList.Add(new Button());
+					buttonList.Add(new InsideButton(i));
 				}
-				return current_floor = 1;
 			}
-			public void move_next() {
-				var FloorNumber = this.floorList.Pop();
+			public void moveNext() {
+				var FloorNumber = this.floorList[0];
+				this.floorList.RemoveAt(0);
 				if (this.current_floor > FloorNumber) {
 					this.moveDown(FloorNumber);
 				}
@@ -112,44 +123,42 @@ namespace Rocket_Elevators_Controllers {
 			}
 
 			public void moveDown(int FloorNumber) {
+					tmr.Interval = 1000;
 				this.direction = "down";
 				this.status = "Moving";
 				Console.WriteLine("Elevator is going down");
-
-				var interval = setInterval(() =>{
+				do{
 					this.current_floor = this.current_floor - 1;
 					Console.WriteLine(this.current_floor);
-					if (this.current_floor == FloorNumber) {
-						clearInterval(interval);
-						Console.WriteLine("Arrived at floor " + this.current_floor);
-						this.OpenDoor();
 					}
-				},
-				1000);
+					 while(this.current_floor > FloorNumber);
+				Console.WriteLine("Arrived at floor " + this.current_floor);
+						this.OpenDoor();
 			}
 			public void moveUp(int FloorNumber) {
 				this.direction = "up";
 				this.status = "Moving";
 				Console.WriteLine("Elevator is going up");
-				var interval = setInterval(() => {
-					this.current_floor = this.current_floor + 1;
+				
+do
+{
+this.current_floor = this.current_floor + 1;
 					Console.WriteLine(this.current_floor);
-					if (this.current_floor == FloorNumber) {
-						clearInterval(interval);
-						Console.WriteLine("Arrived at floor " + this.current_floor);
+
+} while(this.current_floor < FloorNumber);
+				Console.WriteLine("Arrived at floor " + this.current_floor);
 						this.OpenDoor();
-					}
-				},
-				1000);
 			}
-			public void addFloorToList(int FloorNumber) {
-				this.floorList.Add(FloorNumber);
+				
+
+			public void addFloorToList(int floorNumber) {
+				this.floorList.Add(floorNumber);
 				if (this.direction == "up") {
-					this.floorList.Sort();
+					this.floorList.Sort((a, b) => a.CompareTo(b));
 					Console.WriteLine(this.floorList);
-				}
+					}
 				else if (this.direction == "down") {
-					this.floorList.Sort().reverse();
+					this.floorList.Sort((a, b) => -1* a.CompareTo(b));
 					Console.WriteLine(this.floorList);
 				}
 			}
@@ -157,33 +166,40 @@ namespace Rocket_Elevators_Controllers {
 			public void OpenDoor() {
 				Console.WriteLine("Opening door on floor " + this.current_floor);
 				this.status = "open_door";
-				setTimeout(() => {
-					this.closeDoor();
-				},
-				5000);
+				System.Threading.Thread.Sleep(3000);
+				this.closeDoor();
+
 			}
 
 			public void closeDoor() {
 				Console.WriteLine("Closing door");
 				this.status = "close_door";
-				if (this.floorList.Count() > 0) {
-					this.move_next();
+				if (this.floorList.Count > 0) {
+					this.moveNext();
 				}
 			}
 
 			public void activateInsideButton(int FloorNumber) {
 				Console.WriteLine("Activated button at floor " + FloorNumber);
-				if (this.requestFloor == this.floorList) {
-					this.activateInsideButton = false;
-				}
-				if (this.requestFloor < this.floorList) {
-					this.moveUp();
-				}
-				else if (this.requestFloor > this.floorList) {
-					this.moveDown();
+
+				foreach(InsideButton currentButton in this.buttonList)
+				{
+					if (currentButton.floor == FloorNumber) {
+						currentButton.status = "activated";
+					}
 				}
 			}
 
+			public void deactivateInsideButton(int FloorNumber) {
+				Console.WriteLine("Activated button at floor " + FloorNumber);
+
+				foreach(InsideButton currentButton in this.buttonList)
+				{
+					if (currentButton.floor == FloorNumber) {
+						currentButton.status = "deactivated";
+					}
+				}
+			}
 		}
 }
 
