@@ -49,7 +49,7 @@ class ElevatorController {
         elevator.move_next();
 
     }
-    FindElevator(FloorNumber, direction) {
+    FindElevator(FloorNumber) {
         var distance_floor = 999;
         var selected_elevator = null;
         for (var i = 0; i < this.column.elevatorList.length; i++) {
